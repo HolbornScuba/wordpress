@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "holborn-wordpress.webFullname" . }}
+  labels:
+    {{- include "holborn-wordpress.webLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "holborn-wordpress.webSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/nginxConfig: {{ include (print $.Template.BasePath "/web-configmap.yaml") . | sha256sum | trunc 63 }}
+      labels:
+        {{- include "holborn-wordpress.webSelectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      serviceAccountName: {{ include "holborn-wordpress.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.webRepo }}:{{ .Values.image.webTag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.nginx.resources | nindent 12 }}
+          volumeMounts:
+          - mountPath:  /etc/nginx/nginx.conf
+            name:       nginx-config
+            subPath:    nginx-conf
+            readOnly:   true
+          - mountPath:  /etc/nginx/conf.d/default.conf
+            name:       nginx-config
+            subPath:    default-conf
+            readOnly:   true
+          - mountPath:  /etc/nginx/fastcgi.conf
+            name:       nginx-config
+            subPath:    fastcgi-conf
+            readOnly:   true
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: {{ include "holborn-wordpress.webFullname" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

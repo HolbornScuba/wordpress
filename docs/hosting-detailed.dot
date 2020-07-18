@@ -1,0 +1,40 @@
+#!/usr/bin/env dot
+# dot -Tpng -o hosting-simple.png hosting-simple.dot
+
+digraph Hosting {
+  graph [compound=true];
+  node [fontname="verdana"];
+  label = "Hosting"
+
+  internet      [ shape=none,    label="Internet", image="cloud_250_134.png" ];
+
+  internet      -> loadBalancer;
+  loadBalancer  -> ingress;
+  subgraph cluster_Kubernetes {
+    label = "Kubernetes";
+    ingress       -> nginx_service
+    subgraph cluster_SharedStorage {
+      label = "Holborn Wordpress Chart";
+      nginx_service -> nginx_pod;
+      nginx_pod     -> app_service;
+      app_service   -> app_pod;
+    }
+    storage -> app_pod    [ arrowhead=crow ];
+    storage -> nginx_pod  [ arrowhead=crow ];
+    app_pod -> db;
+  }
+
+
+  ingress       [shape=Mrecord, color="#3c8eb7", style=filled, label="{K8s Ingress|SSL offloading}"];
+  nginx_service [shape=Mrecord, color="#cca049", style=filled, label="{K8s NginX svc|TCP Port:80|(internal loadbalancer)}"];
+  nginx_pod     [shape=Mrecord, color="#cca049", style=filled, label="{NginX}"];
+
+  storage       [shape=Mrecord, color="#30c18e", style=filled, label="{NFS Storage}"];
+
+  app_service   [shape=Mrecord, color="#4d4dff", style=filled, label="{K8s php-fpm svc|TCP Port:9000|(internal loadbalancer)}"];
+  app_pod       [shape=Mrecord, color="#4d4dff", style=filled, label="{Wordpress|php-fpm}"];
+
+  loadBalancer [shape=Mrecord, color="#dde01a", style=filled, label="{NginX|Proxy Protocol}"];
+  db  [shape=Mrecord, color="#299971", style=filled, label="{MySQL Database}"];
+}
+

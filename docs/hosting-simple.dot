@@ -1,0 +1,25 @@
+#!/usr/bin/env dot
+# dot -Tpng -o hosting-simple.png hosting-simple.dot
+
+digraph Hosting {
+  graph [compound=true];
+  node [fontname="verdana"];
+  label = "Hosting"
+
+  internet      [ shape=none,    label="Internet", image="cloud_250_134.png" ];
+
+  internet      -> loadBalancer;
+  loadBalancer  -> web;
+  subgraph cluster_SharedStorage {
+    label = "Shared Storage";
+    web           -> app;
+  }
+  app -> db;
+
+
+  web [shape=Mrecord, color="#cca049", style=filled, label="{NginX}"];
+  app [shape=Mrecord, color="#4d4dff", style=filled, label="{Wordpress|php-fpm}"];
+  db  [shape=Mrecord, color="#299971", style=filled, label="{MySQL Database}"];
+
+}
+
