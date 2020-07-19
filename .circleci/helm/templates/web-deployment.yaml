@@ -24,7 +24,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: nginx
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.webRepo }}:{{ .Values.image.webTag }}"
@@ -34,12 +34,16 @@ spec:
               containerPort: 80
               protocol: TCP
           livenessProbe:
+            #periodSeconds:  20
+            #failureThreshold: 100
             httpGet:
-              path: /
+              path: /_healthz/index.html
               port: http
           readinessProbe:
+            #periodSeconds:  20
+            #failureThreshold: 100
             httpGet:
-              path: /
+              path: /_healthz/index.html
               port: http
           resources:
             {{- toYaml .Values.nginx.resources | nindent 12 }}
@@ -56,10 +60,34 @@ spec:
             name:       nginx-config
             subPath:    fastcgi-conf
             readOnly:   true
+          - mountPath:  /var/www/html
+            name:       webroot
+          - mountPath:  /var/www/html/docs
+            subPath:    docs
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/members-private
+            subPath:    members-private
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/wp-includes
+            subPath:    wp-includes
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/wp-content
+            subPath:    wp-content
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/{{ .Values.wordpress.google.siteVerification }}
+            subPath:    gsv
+            name:       nginx-config
+            readOnly:   true
       volumes:
+        - name: webroot
+          emptyDir: {}
         - name: nginx-config
           configMap:
             name: {{ include "holborn-wordpress.webFullname" . }}
+        - name: nfs-hdiver
+          nfs:
+            server: 192.168.124.5
+            path: /nfs/hdiver
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

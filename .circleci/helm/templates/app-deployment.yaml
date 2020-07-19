@@ -11,6 +11,8 @@ spec:
       {{- include "holborn-wordpress.appSelectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        checksum/nginxConfig: {{ include (print $.Template.BasePath "/app-configmap.yaml") . | sha256sum | trunc 63 }}
       labels:
         {{- include "holborn-wordpress.appSelectorLabels" . | nindent 8 }}
     spec:
@@ -22,7 +24,7 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
-        - name: healthCheck
+        - name: health-check
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.appRepo }}:{{ .Chart.AppVersion }}"
@@ -31,7 +33,7 @@ spec:
             - sh
             - -c
             - |
-              curl -LO /health/check https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck \
+              curl -Lo /health/check 'https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck' \
               && chmod +x /health/check
           volumeMounts:
           - mountPath:  /health
@@ -46,13 +48,44 @@ spec:
             - name: phpfpm
               containerPort: {{ .Values.service.appPort }}
               protocol: TCP
+          env:
+          - name: WORDPRESS_DB_HOST
+            value: '{{ .Values.wordpress.db.host }}'
+          - name: WORDPRESS_TABLE_PREFIX
+            value: '{{ .Values.wordpress.db.prefix }}'
+          - name: WORDPRESS_DB_USER_FILE
+            value: /secrets/dbUsername
+          - name: WORDPRESS_DB_PASSWORD_FILE
+            value: /secrets/dbPassword
+          - name: WORDPRESS_DB_NAME_FILE
+            value: /secrets/dbName
+          - name: WORDPRESS_AUTH_KEY_FILE
+            value: /secrets/authKey
+          - name: WORDPRESS_SECURE_AUTH_KEY_FILE
+            value: /secrets/secureAuthKey
+          - name: WORDPRESS_LOGGED_IN_KEY_FILE
+            value: /secrets/loggedInKey
+          - name: WORDPRESS_NONCE_KEY
+            value: /secrets/nonceKey
+          - name: WORDPRESS_AUTH_SALT
+            value: /secrets/authSalt
+          - name: WORDPRESS_SECURE_AUTH_SALT
+            value: /secrets/secureAuthSalt
+          - name: WORDPRESS_LOGGED_IN_SALT
+            value: /secrets/loggedInSalt
+          - name: WORDPRESS_NONCE_SALT
+            value: /secrets/nonceSalt
           livenessProbe:
+            periodSeconds:  10
+            failureThreshold: 10
             exec:
               command:
                 - /bin/sh
                 - -c
-                - '/health/check'
+                - 'apk add --no-cache fcgi && /health/check'
           readinessProbe:
+            periodSeconds:  20
+            failureThreshold: 10
             exec:
               command:
                 - /bin/sh
@@ -63,9 +96,42 @@ spec:
           volumeMounts:
           - mountPath:  /health
             name:       scratch
+          - mountPath:  /secrets
+            name:       secret-volume
+            readOnly:   true
+          - mountPath:  /usr/local/etc/php-fpm.d/health.conf
+            subPath:    php-fpm.health-conf
+            name:       php-config
+            readOnly:   true
+          - mountPath:  /var/www/html/docs
+            subPath:    docs
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/paypal
+            subPath:    paypal
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/wp-content
+            subPath:    wp-content
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/members-private
+            subPath:    members-private
+            name:       nfs-hdiver
+          - mountPath:  /var/www/html/{{ .Values.wordpress.google.siteVerification }}
+            subPath:    gsv
+            name:       php-config
+            readOnly:   true
       volumes:
         - name: scratch
           emptyDir: {}
+        - name: php-config
+          configMap:
+            name: {{ include "holborn-wordpress.appFullname" . }}
+        - name: secret-volume
+          secret:
+            secretName: {{ include "holborn-wordpress.fullname" . }}
+        - name: nfs-hdiver
+          nfs:
+            server: 192.168.124.5
+            path: /nfs/hdiver
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -78,3 +144,6 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
+#        - name: configmap
+#          configMap:
+#            name: { include "holborn-wordpress.appFullname" . }}
