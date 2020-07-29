@@ -54,11 +54,11 @@ jobs:
 
 workflows:
   version: 2
-    Deploy:
-      jobs:
-        - Deploy Updated Code:
-            context: ServerBox-Deploy
-            filters:
-              branches:
-                only:
-                  - master
+  Deploy:
+    jobs:
+      - Deploy Updated Code:
+          context: ServerBox-Deploy
+          filters:
+            branches:
+              only:
+                - master
