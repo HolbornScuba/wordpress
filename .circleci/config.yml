@@ -1,0 +1,53 @@
+version: 2.1
+
+executors:
+  helm:
+    docker:
+      - image: helm:3.2.4
+
+jobs:
+  Deploy:
+    executor: helm
+    steps:
+      - checkout
+      - run:
+          name: Add packaged to container
+          command: |
+            apk update
+            apk add --no-cache openssh-client bash
+      - run:
+          name: Setup SSH tunnel
+          command: |
+            mkdir ~/.ssh
+            echo -n "${SSH_DEPLOY_KEY}" | base64 -d                   >  ~/holborn-circleci
+            echo "host jump-grey"                                     >> ~/.ssh/config
+            echo "  port ${REMOTE_SSH_PORT}"                          >> ~/.ssh/config
+            echo "  hostname 93.158.202.92"                           >> ~/.ssh/config
+            echo "  user holborndeployer"                             >> ~/.ssh/config
+            echo "  UserKnownHostsFile /dev/null"                     >> ~/.ssh/config
+            echo "  IdentityFile ~/holborn-circleci"                  >> ~/.ssh/config
+            echo "  StrictHostKeyChecking no"                         >> ~/.ssh/config
+            echo "  AddressFamily inet"                               >> ~/.ssh/config
+            echo "  LocalForward 8888:tinyproxy.kube-public.svc:8888" >> ~/.ssh/config
+      - run:
+          name: Adding K8s Deploy Certs
+          command: |
+            mkdir ~/.kube
+            mv ~/.circleci/k8s.config ~/.kube/config
+            echo -n "${K8sCaCrt}"     | base64 -d > /root/.kube/grey.ca.crt
+            echo -n "${K8sDeployCrt}" | base64 -d > /root/.kube/deploy.crt
+            echo -n "${K8sDeployKey}" | base64 -d > /root/.kube/deploy.key
+      - run:
+          name: Decrypt Secrets
+          command: |
+            echo -n "${GPG_PASSPHRASE}" | gpg --decrypt --batch --yes --passphrase-fd 0 --cipher-algo AES256 -o env.yaml env.yaml.gpg
+      - run:
+          name: Establishing SSH Tunnel in the background
+          background: true
+          command: ssh -N jump-grey
+      - deploy:
+          name: Adding helm repo and deploying updates
+          command: |
+            helm repo add holbornscuba https://holbornscuba.github.io/helm
+            export HTTPS_PROXY=http://127.0.0.1:8888
+            helm upgrade holborn-wordpress holbornscuba/holborn-wordpress --install --values env.yaml --values env-secrets.yaml
