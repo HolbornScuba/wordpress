@@ -3,7 +3,7 @@ version: 2.1
 executors:
   helm:
     docker:
-      - image: helm:3.2.4
+      - image: alpine/helm:3.2.4
 
 jobs:
   Deploy Updated Code:
