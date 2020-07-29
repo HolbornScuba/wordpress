@@ -6,7 +6,7 @@ executors:
       - image: helm:3.2.4
 
 jobs:
-  Deploy:
+  Deploy Updated Code:
     executor: helm
     steps:
       - checkout
@@ -51,3 +51,13 @@ jobs:
             helm repo add holbornscuba https://holbornscuba.github.io/helm
             export HTTPS_PROXY=http://127.0.0.1:8888
             helm upgrade holborn-wordpress holbornscuba/holborn-wordpress --install --values env.yaml --values env-secrets.yaml
+
+workflows:
+  version: 2
+    Deploy:
+      - Deploy Updated Code:
+          context: ServerBox-Deploy
+          filters:
+            branches:
+              only:
+                - master
