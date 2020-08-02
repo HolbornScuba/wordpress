@@ -28,7 +28,7 @@ jobs:
             echo "  IdentityFile ~/.ssh/holborn-circleci"             >> ~/.ssh/config
             echo "  StrictHostKeyChecking no"                         >> ~/.ssh/config
             echo "  AddressFamily inet"                               >> ~/.ssh/config
-            echo "  LocalForward 8888:tinyproxy.kube-public.svc:8888" >> ~/.ssh/config
+            echo "  LocalForward 8888 tinyproxy.kube-public.svc:8888" >> ~/.ssh/config
       - run:
           name: Adding K8s Deploy Certs
           command: |
