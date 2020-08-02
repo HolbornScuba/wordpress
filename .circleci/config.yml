@@ -28,7 +28,7 @@ jobs:
             echo "  IdentityFile ~/.ssh/holborn-circleci"             >> ~/.ssh/config
             echo "  StrictHostKeyChecking no"                         >> ~/.ssh/config
             echo "  AddressFamily inet"                               >> ~/.ssh/config
-            echo "  LocalForward 8888 tinyproxy.kube-public.svc:8888" >> ~/.ssh/config
+            echo "  LocalForward 48888 tinyproxy.kube-public.svc:8888" >> ~/.ssh/config
       - run:
           name: Adding K8s Deploy Certs
           command: |
@@ -49,7 +49,7 @@ jobs:
           name: Adding helm repo and deploying updates
           command: |
             helm repo add holbornscuba https://holbornscuba.github.io/helm
-            export HTTPS_PROXY=http://127.0.0.1:8888
+            export HTTPS_PROXY=http://127.0.0.1:48888
             helm upgrade holborn-wordpress holbornscuba/holborn-wordpress --install --values env.yaml --values env-secrets.yaml
 
 workflows:
