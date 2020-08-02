@@ -40,7 +40,7 @@ jobs:
       - run:
           name: Decrypt Secrets
           command: |
-            echo -n "${GPG_PASSPHRASE}" | gpg --decrypt --batch --yes --passphrase-fd 0 --cipher-algo AES256 -o env.yaml env.yaml.gpg
+            echo -n "${GPG_PASSPHRASE}" | gpg --decrypt --batch --yes --passphrase-fd 0 --cipher-algo AES256 -o env-secrets.yaml env-secrets.yaml.gpg
       - run:
           name: Establishing SSH Tunnel in the background
           background: true
