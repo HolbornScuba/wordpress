@@ -19,13 +19,13 @@ jobs:
           name: Setup SSH tunnel
           command: |
             mkdir ~/.ssh
-            echo -n "${SSH_DEPLOY_KEY}" | base64 -d                   >  ~/holborn-circleci
+            echo -n "${SSH_DEPLOY_KEY}" | base64 -d                   >  ~/.ssh/holborn-circleci
             echo "host jump-grey"                                     >> ~/.ssh/config
             echo "  port ${REMOTE_SSH_PORT}"                          >> ~/.ssh/config
             echo "  hostname 93.158.202.92"                           >> ~/.ssh/config
             echo "  user holborndeployer"                             >> ~/.ssh/config
             echo "  UserKnownHostsFile /dev/null"                     >> ~/.ssh/config
-            echo "  IdentityFile ~/holborn-circleci"                  >> ~/.ssh/config
+            echo "  IdentityFile ~/.ssh/holborn-circleci"             >> ~/.ssh/config
             echo "  StrictHostKeyChecking no"                         >> ~/.ssh/config
             echo "  AddressFamily inet"                               >> ~/.ssh/config
             echo "  LocalForward 8888:tinyproxy.kube-public.svc:8888" >> ~/.ssh/config
@@ -33,10 +33,10 @@ jobs:
           name: Adding K8s Deploy Certs
           command: |
             mkdir ~/.kube
-            mv ~/.circleci/k8s.config ~/.kube/config
-            echo -n "${K8sCaCrt}"     | base64 -d > /root/.kube/grey.ca.crt
-            echo -n "${K8sDeployCrt}" | base64 -d > /root/.kube/deploy.crt
-            echo -n "${K8sDeployKey}" | base64 -d > /root/.kube/deploy.key
+            mv .circleci/k8s.config ~/.kube/config
+            echo -n "${K8sCaCrt}"     | base64 -d > ~/.kube/grey.ca.crt
+            echo -n "${K8sDeployCrt}" | base64 -d > ~/.kube/deploy.crt
+            echo -n "${K8sDeployKey}" | base64 -d > ~/.kube/deploy.key
       - run:
           name: Decrypt Secrets
           command: |
