@@ -18,7 +18,7 @@ jobs:
       - run:
           name: Setup SSH tunnel
           command: |
-            mkdir ~/.ssh
+            mkdir ~/.ssh || true
             echo -n "${SSH_DEPLOY_KEY}" | base64 -d                   >  ~/.ssh/holborn-circleci
             echo "host jump-grey"                                     >> ~/.ssh/config
             echo "  port ${REMOTE_SSH_PORT}"                          >> ~/.ssh/config
