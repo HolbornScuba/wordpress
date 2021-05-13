@@ -52,7 +52,7 @@ jobs:
             helm repo add holbornscuba https://holbornscuba.github.io/helm
             export HTTPS_PROXY=http://127.0.0.1:48888
             sleep 5s
-            helm upgrade holborn-wordpress holbornscuba/holborn-wordpress --install --values env.yaml --values env-secrets.yaml
+            helm upgrade holborn-wordpress holbornscuba/holborn-wordpress --install --wait 15m --values env.yaml --values env-secrets.yaml
 
 workflows:
   version: 2
