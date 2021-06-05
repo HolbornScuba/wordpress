@@ -5,11 +5,10 @@ executors:
     docker:
       - image: alpine/helm:3.2.4
 
-jobs:
-  Deploy Updated Code:
-    executor: helm
+commands:
+  update-and-tunnel:
+    description: Add Packages and Tunnel to Bastion
     steps:
-      - checkout
       - run:
           name: Add packaged to container
           command: |
@@ -42,6 +41,13 @@ jobs:
             echo -n "${K8sCaCrt}"     | base64 -d > ~/.kube/grey.ca.crt
             echo -n "${K8sDeployCrt}" | base64 -d > ~/.kube/deploy.crt
             echo -n "${K8sDeployKey}" | base64 -d > ~/.kube/deploy.key
+
+jobs:
+  Deploy Updated Code:
+    executor: helm
+    steps:
+      - checkout
+      - update-and-tunnel
       - run:
           name: Decrypt Secrets
           command: |
@@ -52,7 +58,32 @@ jobs:
             helm repo add holbornscuba https://holbornscuba.github.io/helm
             export HTTPS_PROXY=http://127.0.0.1:48888
             sleep 5s
-            helm upgrade holborn-wordpress holbornscuba/holborn-wordpress --install --wait --timeout 15m --values env.yaml --values env-secrets.yaml --history-max 3
+            helm upgrade holborn-wordpress holbornscuba/holborn-wordpress \
+              --namespace holborn \
+              --values env.yaml --values env-secrets.yaml \
+              --install --wait --timeout 15m \
+              --history-max 3
+
+  Test Updated Code:
+    executor: helm
+    steps:
+      - checkout
+      - update-and-tunnel
+      - run:
+          name: Decrypt Secrets
+          command: |
+            echo -n "${GPG_PASSPHRASE}" | gpg --decrypt --batch --yes --passphrase-fd 0 --cipher-algo AES256 -o branch-secrets.yaml branch-secrets.yaml.gpg
+      - deploy:
+          name: Adding helm repo and deploying updates
+          command: |
+            helm repo add holbornscuba https://holbornscuba.github.io/helm
+            export HTTPS_PROXY=http://127.0.0.1:48888
+            sleep 5s
+            helm upgrade holborn-wordpress holbornscuba/holborn-wordpress \
+              --namespace holborn-testing \
+              --values branch.yaml --values branch-secrets.yaml \
+              --install --wait --timeout 15m \
+              --history-max 3
 
 workflows:
   version: 2
@@ -63,5 +94,12 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
+  Test:
+    jobs:
+      - Test Updated Code:
+          context: ServerBox-Deploy
+          filters:
+            branches:
+              ignore:
                 - main
