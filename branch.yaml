@@ -13,7 +13,7 @@ wordpress:
       - name: nfs-hdiver
         nfs:
           server: 192.168.124.5
-          path: /nfs/hdiver
+          path: /nfs/dev_hdiver
   mailserver: '192.168.124.25'
   resource:
     enabled: resources
@@ -26,34 +26,21 @@ wordpress:
           server: 192.168.124.5
           path: /nfs/hdiver-resources
 
+
 ingress:
   enabled: true
   annotations:
     nginx.ingress.kubernetes.io/configuration-snippet: |
       subs_filter_types  *;
-      subs_filter        'src="http://holborn' 'src="https://holborn';
-      subs_filter        'http://holborn' 'https://holborn' ig;
+      subs_filter        'src="http://dev.holborn' 'src="https://dev.holborn';
+      subs_filter        'http://dev.holborn' 'https://dev.holborn' ig;
       sub_filter_once     off;
 
   hosts:
-    - host: holbornscubalondon.co.uk
-      paths:
-        - /
-    - host: www.holbornscubalondon.co.uk
-      paths:
-        - /
-    - host: holbornscubalondon.com
-      paths:
-        - /
-    - host: www.holbornscubalondon.com
+    - host: dev.holbornscubalondon.co.uk
       paths:
         - /
   tls:
-    - secretName: holbornscubalondon.co.uk-tls
+    - secretName: dev.holbornscubalondon.co.uk-tls
       hosts:
-        - holbornscubalondon.co.uk
-        - www.holbornscubalondon.co.uk
-    - secretName: holbornscubalondon.com-tls
-      hosts:
-        - holbornscubalondon.com
-        - www.holbornscubalondon.com
+        - dev.holbornscubalondon.co.uk
