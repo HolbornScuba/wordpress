@@ -59,10 +59,10 @@ jobs:
             export HTTPS_PROXY=http://127.0.0.1:48888
             sleep 5s
             helm upgrade holborn-wordpress holbornscuba/holborn-wordpress \
-              --namespace holborn
+              --namespace holborn \
               --values env.yaml --values env-secrets.yaml \
-              --history-max 3
               --install --wait --timeout 15m \
+              --history-max 3
 
   Test Updated Code:
     executor: helm
@@ -80,10 +80,10 @@ jobs:
             export HTTPS_PROXY=http://127.0.0.1:48888
             sleep 5s
             helm upgrade holborn-wordpress holbornscuba/holborn-wordpress \
-              --namespace holborn-testing
+              --namespace holborn-testing \
               --values branch.yaml --values branch-secrets.yaml \
-              --history-max 3
               --install --wait --timeout 15m \
+              --history-max 3
 
 workflows:
   version: 2
